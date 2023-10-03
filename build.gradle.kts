@@ -23,6 +23,9 @@ dependencies {
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+	implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")	//for LocalDateTime serialisation
+	implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-csv")
 }
 
 tasks.withType<KotlinCompile> {
