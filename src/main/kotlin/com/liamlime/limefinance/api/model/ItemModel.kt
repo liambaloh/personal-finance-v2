@@ -8,10 +8,10 @@ data class ItemModel(
     val category: CategoryModel,
     val currencyAmount: CurrencyAmountModel,
     val count: Int,
-    val name: String,
+    override val name: String,
     val resolution: ResolutionModel,
     val resolutionDate: LocalDateTime,
     val location: LocationModel,
     val tags: List<TagModel>,
     val note: String
-)
+): NameableEntity
