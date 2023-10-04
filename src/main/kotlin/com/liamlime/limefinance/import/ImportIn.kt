@@ -1,11 +1,9 @@
 package com.liamlime.limefinance.import
 
-import com.fasterxml.jackson.dataformat.csv.CsvMapper
 import com.liamlime.limefinance.import.model.DiscountImportModel
 import com.liamlime.limefinance.import.model.ItemImportModel
 import com.liamlime.limefinance.import.model.ReceiptImportModel
-import java.io.FileReader
-import java.io.Reader
+import com.liamlime.limefinance.import.model.toAmount
 
 class ImportIn {
     fun readFileFromResources(fileName: String): List<String> {
@@ -27,10 +25,13 @@ class ImportIn {
     }
 
     fun parseLineAsCsv(line: String): List<String> {
-        return line.split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)".toRegex())
+        return line
+            .split(",(?=([^\"]*\"[^\"]*\")*[^\"]*$)".toRegex())
+            .map { if (it.startsWith("\"")) it.substring(1) else it }
+            .map { if (it.endsWith("\"")) it.substring(0, it.length - 1) else it }
     }
 
-    fun doImport() {
+    fun doImport(): List<ReceiptImportModel> {
         val lines = readFileFromResources("/in.csv")
             .drop(1)
             .removeComments()
@@ -46,10 +47,10 @@ class ImportIn {
                     val wallet = line[2]
                     val store = line[3]
                     val receiptCurrency = line[4]
-                    val receiptAmount = line[5].toDouble()
+                    val receiptAmount = line[5].toAmount()
                     val location = line[6]
                     val chargeCurrency = line.getOrNull(7) ?: receiptCurrency
-                    val chargeAmount = line.getOrNull(8)?.toDouble() ?: receiptAmount
+                    val chargeAmount = line.getOrNull(8)?.toAmount() ?: receiptAmount
                     currentReceipt = ReceiptImportModel(
                         date = date,
                         wallet = wallet,
@@ -66,19 +67,23 @@ class ImportIn {
                 "ITEM" -> {
                     val transactionType = line[1]
                     val category = line[2]
-                    val amount = line[3].toDouble()
+                    val amount = line[3].toAmount()
                     val count = line[4].toInt()
                     val name = line[5]
                     val resolutionName = line[6]
                     val resolutionDatetime = line[7]
                     val locationName = line[8]
-                    val tags = line[9].split(" ")
+                    val tags = line[9]
+                        .split(" ")
+                        .map { it.trim() }
+                        .filter { it.isNotBlank() }
                     val note = line[10]
 
                     currentReceipt?.items?.add(
                         ItemImportModel(
                             transactionType = transactionType,
                             category = category,
+                            currency = currentReceipt?.receiptCurrency ?: "UNKNOWN",
                             amount = amount,
                             count = count,
                             name = name,
@@ -94,11 +99,12 @@ class ImportIn {
 
                 "DISCOUNT" -> {
                     val name = line[1]
-                    val amount = line[2].toDouble()
+                    val amount = line[2].toAmount()
 
                     currentReceipt?.discounts?.add(
                         DiscountImportModel(
                             name = name,
+                            currency = currentReceipt?.receiptCurrency ?: "UNKNOWN",
                             amount = amount
                         )
                     )
@@ -113,14 +119,17 @@ class ImportIn {
                     val store = line[3]
                     val category = line[4]
                     val currency = line[5]
-                    val amount = line[6].toDouble()
+                    val amount = line[6].toAmount()
                     val count = line[7].toInt()
                     val item = line[8]
                     val resolution = line[9]
                     val resolutionDate = line[10]
                     val locationFrom = line[11]
                     val locationFor = line[12]
-                    val tags = line[13].split(" ")
+                    val tags = line[13]
+                        .split(" ")
+                        .map { it.trim() }
+                        .filter { it.isNotBlank() }
                     val note = line[14]
 
                     currentReceipt = ReceiptImportModel(
@@ -136,6 +145,7 @@ class ImportIn {
                             ItemImportModel(
                                 transactionType = transactionType,
                                 category = category,
+                                currency = currency,
                                 amount = amount,
                                 count = count,
                                 name = item,
@@ -155,5 +165,7 @@ class ImportIn {
         receipts.forEach {
             println("${it.store} on ${it.date}: ${it.items.count()} items")
         }
+
+        return receipts
     }
 }

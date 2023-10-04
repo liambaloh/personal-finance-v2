@@ -1,6 +1,5 @@
 package com.liamlime.limefinance.api.model
 
-import java.awt.Color
 import java.time.LocalDateTime
 
 data class ReceiptModel(
@@ -11,5 +10,6 @@ data class ReceiptModel(
     val chargeCurrencyAmount: CurrencyAmountModel,
     val location: LocationModel,
     val note: String,
-    val items: List<ItemModel>
+    val items: List<ItemModel>,
+    val discounts: List<DiscountModel>
 )

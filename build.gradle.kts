@@ -26,6 +26,9 @@ dependencies {
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")	//for LocalDateTime serialisation
 	implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-csv")
+
+	testImplementation("io.kotest:kotest-runner-junit5")
+	testImplementation("io.mockk:mockk:1.13.4")
 }
 
 tasks.withType<KotlinCompile> {
