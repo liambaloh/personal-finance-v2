@@ -1,5 +1,6 @@
 package com.liamlime.limefinance
 
+import com.liamlime.limefinance.api.datatype.TransactionType
 import com.liamlime.limefinance.api.model.*
 import com.liamlime.limefinance.import.ImportIn
 import com.liamlime.limefinance.import.model.*
@@ -68,6 +69,7 @@ fun main(args: Array<String>) {
     val itemsByTag = receipts.allItemsByTag()
     val itemsByWallet = receipts.itemsByWallet()
     val itemsByStore = receipts.itemsByStore()
+    val itemsByTransactionType = receipts.allItemsByTransactionTypes()
 
 
     val currencyAmountsByCategory = itemsByCategory.aggregateCurrencyAmounts()
@@ -80,19 +82,20 @@ fun main(args: Array<String>) {
     val currencyAmountsByTag = itemsByTag.aggregateCurrencyAmounts()
     val currencyAmountsByWallet = itemsByWallet.aggregateCurrencyAmounts()
     val currencyAmountsByStore = itemsByStore.aggregateCurrencyAmounts()
+    val currencyAmountsByTransactionType = itemsByTransactionType.aggregateCurrencyAmounts()
 
-    val currencyAmountsByCategoryAndResolution = itemsByCategory.map { (name, items) ->
-        name to items.itemsByResolution()
-    }
+    //val currencyAmountsByCategoryAndResolution = itemsByCategory.map { (name, items) ->
+    //    name to items.itemsByResolution()
+    //}
+//
+    //currencyAmountsByCategoryAndResolution.forEach { (category, itemsInCategoryByResolution) ->
+    //    println("Category: ${category.name} has items by tag:")
+    //    val currencyAmountsInCategoryByResolution = itemsInCategoryByResolution.aggregateCurrencyAmounts()
+    //    currencyAmountsInCategoryByResolution.printFormatted()
+    //}
 
-    currencyAmountsByCategoryAndResolution.forEach { (category, itemsInCategoryByResolution) ->
-        println("Category: ${category.name} has items by tag:")
-        val currencyAmountsInCategoryByResolution = itemsInCategoryByResolution.aggregateCurrencyAmounts()
-        currencyAmountsInCategoryByResolution.printFormatted()
-    }
 
-
-    //currencyAmountsByTag.printFormatted()
+    currencyAmountsByTransactionType.printFormatted()
 
     //receipts.forEach { receipt ->
     //    println("RECEIPT: ${receipt.store.name} on ${receipt.date} cost ${receipt.receiptCurrencyAmount}")
@@ -154,7 +157,7 @@ fun List<ItemModel>.itemsByCategory(): Map<CategoryModel, List<ItemModel>> {
 }
 
 fun List<ReceiptModel>.distinctItemCurrencies(): List<CurrencyModel> {
-    return this.flatMap { it.items.map { it.currencyAmount.currency } }.distinct()
+    return this.flatMap { it.items.distinctCurrencies() }.distinct()
 }
 
 fun List<ItemModel>.distinctCurrencies(): List<CurrencyModel> {
@@ -203,7 +206,7 @@ fun List<ReceiptModel>.distinctReceiptLocations(): List<LocationModel> {
 }
 
 fun List<ReceiptModel>.distinctItemLocations(): List<LocationModel> {
-    return this.flatMap { it.items.map { it.location } }.distinct()
+    return this.flatMap { it.items.distinctLocations() }.distinct()
 }
 
 fun List<ItemModel>.distinctLocations(): List<LocationModel> {
@@ -230,7 +233,7 @@ fun List<ReceiptModel>.itemsByReceiptLocation(): Map<LocationModel, List<ItemMod
 }
 
 fun List<ReceiptModel>.distinctItemResolutions(): List<ResolutionModel> {
-    return this.flatMap { it.items.map { it.resolution } }.distinct()
+    return this.flatMap { it.items.distinctResolutions() }.distinct()
 }
 
 fun List<ItemModel>.distinctResolutions(): List<ResolutionModel> {
@@ -288,5 +291,24 @@ fun List<ReceiptModel>.itemsByStore(): Map<StoreModel, List<ItemModel>> {
     return stores.associateWith { store ->
         this.filter { it.store == store }
             .flatMap { receipt -> receipt.items }
+    }
+}
+
+fun List<ReceiptModel>.distinctItemTransactionTypes(): List<TransactionType> {
+    return this.flatMap { it.items.distinctTransactionTypes() }.distinct()
+}
+
+fun List<ItemModel>.distinctTransactionTypes(): List<TransactionType> {
+    return this.map { it.transactionType }.distinct()
+}
+
+fun List<ReceiptModel>.allItemsByTransactionTypes(): Map<TransactionType, List<ItemModel>> {
+    return this.allItems().itemsByTransactionTypes()
+}
+
+fun List<ItemModel>.itemsByTransactionTypes(): Map<TransactionType, List<ItemModel>> {
+    val transactionTypes = this.distinctTransactionTypes()
+    return transactionTypes.associateWith { transactionType ->
+        this.filter { item -> item.transactionType == transactionType }
     }
 }
