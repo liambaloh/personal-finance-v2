@@ -72,6 +72,12 @@ fun main(args: Array<String>) {
     val itemsByWallet = receipts.allItemsByAggregatable(ReceiptAggregationParameter.WALLET)
     val itemsByStore = receipts.allItemsByAggregatable(ReceiptAggregationParameter.STORE)
     val itemsByTransactionType = receipts.allItemsByAggregatable(ItemAggregationParameter.TRANSACTION_TYPE)
+    val itemsByYear = receipts.allItemsByAggregatable(ReceiptAggregationParameter.YEAR)
+    val itemsByYearMonth = receipts.allItemsByAggregatable(ReceiptAggregationParameter.YEAR_MONTH)
+    val itemsByYearMonthDay = receipts.allItemsByAggregatable(ReceiptAggregationParameter.YEAR_MONTH_DAY)
+    val itemsByReceiptAmountSign = receipts.allItemsByAggregatable(ReceiptAggregationParameter.RECEIPT_AMOUNT_SIGN)
+    val itemsByChargeAmountSign = receipts.allItemsByAggregatable(ReceiptAggregationParameter.CHARGE_AMOUNT_SIGN)
+    val itemsByItemAmountSign = receipts.allItemsByAggregatable(ItemAggregationParameter.AMOUNT_SIGN)
 
 
     val currencyAmountsByCategory = itemsByCategory.aggregateCurrencyAmounts()
@@ -85,20 +91,33 @@ fun main(args: Array<String>) {
     val currencyAmountsByWallet = itemsByWallet.aggregateCurrencyAmounts()
     val currencyAmountsByStore = itemsByStore.aggregateCurrencyAmounts()
     val currencyAmountsByTransactionType = itemsByTransactionType.aggregateCurrencyAmounts()
+    val currencyAmountsByYear = itemsByYear.aggregateCurrencyAmounts()
+    val currencyAmountsByYearMonth = itemsByYearMonth.aggregateCurrencyAmounts()
+    val currencyAmountsByYearMonthDay = itemsByYearMonthDay.aggregateCurrencyAmounts()
+    val currencyAmountsByReceiptAmountSign = itemsByReceiptAmountSign.aggregateCurrencyAmounts()
+    val currencyAmountsByChargeAmountSign = itemsByChargeAmountSign.aggregateCurrencyAmounts()
+    val currencyAmountsByItemAmountSign = itemsByItemAmountSign.aggregateCurrencyAmounts()
 
 
     val currencyAmountsByCategoryAndResolution = receipts
         .allItemsByAggregatable(ItemAggregationParameter.CATEGORY)
         .itemsByAggregatable(ItemAggregationParameter.RESOLUTION)
 
-    currencyAmountsByCategoryAndResolution.forEach { (category, itemsInCategoryByResolution) ->
-        println("Category: ${category.name} has items by resolution:")
-        val currencyAmountsInCategoryByResolution = itemsInCategoryByResolution.aggregateCurrencyAmounts()
-        currencyAmountsInCategoryByResolution.printFormatted()
-    }
+    val currencyAmountsByTransactionTypeAndItemAmountSign = receipts
+        .allItemsByAggregatable(ItemAggregationParameter.TRANSACTION_TYPE)
+        .itemsByAggregatable(ItemAggregationParameter.AMOUNT_SIGN)
+        .print1()
+
+    //currencyAmountsByCategoryAndResolution.forEach { (category, itemsInCategoryByResolution) ->
+    //    println("Category: ${category.name} has items by resolution:")
+    //    val currencyAmountsInCategoryByResolution = itemsInCategoryByResolution.aggregateCurrencyAmounts()
+    //    currencyAmountsInCategoryByResolution.printFormatted()
+    //}
+
+    //currencyAmountsByTransactionTypeAndItemAmountSign.print1()
 
 
-    //currencyAmountsByStore.printFormatted()
+    //currencyAmountsByItemAmountSign.printFormatted()
 
     //receipts.forEach { receipt ->
     //    println("RECEIPT: ${receipt.store.name} on ${receipt.date} cost ${receipt.receiptCurrencyAmount}")
@@ -111,16 +130,40 @@ fun main(args: Array<String>) {
     //}
 }
 
-fun Map<String, List<CurrencyAmountModel>>.printFormatted() {
-    this.forEach { (name, currencyAmountModels) ->
-        println("Entity: ${name} has items worth:")
+fun Map<NameableEntity, Map<NameableEntity, Map<NameableEntity, Map<NameableEntity, List<ItemModel>>>>>.print3(
+    indentation: Int = 0
+) {
+    this.forEach { (outerNameableEntity, itemsByInnerNameableEntity) ->
+        println("${"\t".repeat(indentation)}Entity: ${outerNameableEntity.name} has items:")
+        itemsByInnerNameableEntity.print2(indentation + 1)
+    }
+}
+
+fun Map<NameableEntity, Map<NameableEntity, Map<NameableEntity, List<ItemModel>>>>.print2(indentation: Int = 0) {
+    this.forEach { (outerNameableEntity, itemsByInnerNameableEntity) ->
+        println("${"\t".repeat(indentation)}Entity: ${outerNameableEntity.name} has items:")
+        itemsByInnerNameableEntity.print1(indentation + 1)
+    }
+}
+
+fun Map<NameableEntity, Map<NameableEntity, List<ItemModel>>>.print1(indentation: Int = 0) {
+    this.forEach { (outerNameableEntity, itemsByInnerNameableEntity) ->
+        println("${"\t".repeat(indentation)}Entity: ${outerNameableEntity.name} has items:")
+        val currencyAmountsInCategoryByResolution = itemsByInnerNameableEntity.aggregateCurrencyAmounts()
+        currencyAmountsInCategoryByResolution.printFormatted(indentation + 1)
+    }
+}
+
+fun Map<NameableEntity, List<CurrencyAmountModel>>.printFormatted(indentation: Int = 0) {
+    this.forEach { (nameableEntity, currencyAmountModels) ->
+        println("${"\t".repeat(indentation)}Entity: ${nameableEntity.name} has items worth:")
         currencyAmountModels.forEach { currencyAmount ->
-            println("\t${currencyAmount.currency.name}: ${currencyAmount.amount}")
+            println("${"\t".repeat(indentation + 1)}${currencyAmount.currency.name}: ${currencyAmount.amount}")
         }
     }
 }
 
-fun Map<out NameableEntity, List<ItemModel>>.aggregateCurrencyAmounts(): Map<String, List<CurrencyAmountModel>> {
+fun Map<out NameableEntity, List<ItemModel>>.aggregateCurrencyAmounts(): Map<NameableEntity, List<CurrencyAmountModel>> {
     return this.map { (nameableEntity, items) ->
         val currencyAmounts = items.map { it.currencyAmount }
             .fold(mutableMapOf<CurrencyModel, BigDecimal>()) { currencyAmountsAcc, currencyAmount ->
@@ -132,7 +175,7 @@ fun Map<out NameableEntity, List<ItemModel>>.aggregateCurrencyAmounts(): Map<Str
                 CurrencyAmountModel(currency, amount)
             }
 
-        nameableEntity.name to currencyAmounts
+        nameableEntity to currencyAmounts
     }.toMap()
 }
 
@@ -149,7 +192,12 @@ fun Map<NameableEntity, List<ItemModel>>.itemsByAggregatable(itemAggregationPara
         val itemsForThisNameableEntity = this[parentNameableEntity] ?: emptyList()
         val aggregatableValues = itemsForThisNameableEntity.distinctItemAggregatable(itemAggregationParameter)
         aggregatableValues.associateWith { aggregationValue ->
-            itemsForThisNameableEntity.filter { item -> item.getAggregationParameters(itemAggregationParameter).contains(aggregationValue) }
+            itemsForThisNameableEntity
+                .filter { item ->
+                    item.getAggregationParameters(itemAggregationParameter)
+                        .map { it.name }
+                        .contains(aggregationValue.name)
+                }
         }
     }
 }
@@ -157,7 +205,11 @@ fun Map<NameableEntity, List<ItemModel>>.itemsByAggregatable(itemAggregationPara
 fun Collection<ItemModel>.itemsByAggregatable(itemAggregationParameter: ItemAggregationParameter): Map<NameableEntity, List<ItemModel>> {
     val aggregatableValues = this.distinctItemAggregatable(itemAggregationParameter)
     return aggregatableValues.associateWith { aggregationValue ->
-        this.filter { item -> item.getAggregationParameters(itemAggregationParameter).contains(aggregationValue) }
+        this.filter { item ->
+            item.getAggregationParameters(itemAggregationParameter)
+                .map { it.name }
+                .contains(aggregationValue.name)
+        }
     }
 }
 
@@ -165,12 +217,10 @@ fun Collection<ReceiptModel>.allItemsByAggregatable(receiptAggregationParameter:
     val aggregatableValues = this.distinctReceiptAggregatable(receiptAggregationParameter)
     return aggregatableValues.associateWith { aggregationValue ->
         this
-            .filter { it.getAggregationParameter(receiptAggregationParameter) == aggregationValue}
+            .filter { it.getAggregationParameter(receiptAggregationParameter).name == aggregationValue.name }
             .flatMap { it.items }
     }
 }
-
-
 
 
 fun Collection<ItemModel>.distinctItemAggregatable(itemAggregationParameter: ItemAggregationParameter): List<NameableEntity> {

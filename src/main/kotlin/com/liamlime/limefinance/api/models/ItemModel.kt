@@ -2,6 +2,7 @@ package com.liamlime.limefinance.api.models
 
 import com.liamlime.limefinance.api.datatypes.ItemAggregationParameter
 import com.liamlime.limefinance.api.datatypes.TransactionType
+import com.liamlime.limefinance.api.datatypes.sign
 import com.liamlime.limefinance.api.interfaces.NameableEntity
 import java.time.LocalDateTime
 
@@ -25,6 +26,7 @@ data class ItemModel(
             ItemAggregationParameter.RESOLUTION -> listOf(resolution)
             ItemAggregationParameter.TAG -> tags
             ItemAggregationParameter.TRANSACTION_TYPE -> listOf(transactionType)
+            ItemAggregationParameter.AMOUNT_SIGN -> listOf(currencyAmount.amount.sign())
         }
     }
 }
