@@ -1,5 +1,6 @@
-package com.liamlime.limefinance.api.model
+package com.liamlime.limefinance.api.models
 
+import com.liamlime.limefinance.api.interfaces.NameableEntity
 import java.awt.Color
 
 data class CategoryModel(

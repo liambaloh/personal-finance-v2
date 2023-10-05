@@ -1,8 +1,9 @@
-package com.liamlime.limefinance.api.model
+package com.liamlime.limefinance.api.models
 
+import com.liamlime.limefinance.api.interfaces.NameableEntity
 import java.awt.Color
 
-data class LocationModel(
+data class TagModel(
     override val name: String,
     val glyph: String,
     val textColor: Color,

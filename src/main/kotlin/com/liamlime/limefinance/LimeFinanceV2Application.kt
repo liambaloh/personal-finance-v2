@@ -1,7 +1,9 @@
 package com.liamlime.limefinance
 
-import com.liamlime.limefinance.api.datatype.TransactionType
-import com.liamlime.limefinance.api.model.*
+import com.liamlime.limefinance.api.datatypes.ItemAggregationParameter
+import com.liamlime.limefinance.api.datatypes.ReceiptAggregationParameter
+import com.liamlime.limefinance.api.interfaces.NameableEntity
+import com.liamlime.limefinance.api.models.*
 import com.liamlime.limefinance.import.ImportIn
 import com.liamlime.limefinance.import.model.*
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -59,17 +61,17 @@ fun main(args: Array<String>) {
         )
     }
 
-    val itemsByCategory = receipts.allItemsByCategory()
-    val itemsByItemCurrency = receipts.allItemsByItemCurrency()
-    val itemsByReceiptCurrency = receipts.itemsByReceiptCurrency()
-    val itemsByReceiptChargeCurrency = receipts.itemsByReceiptChargeCurrency()
-    val itemsByItemLocation = receipts.allItemsByItemLocation()
-    val itemsByReceiptLocation = receipts.itemsByReceiptLocation()
-    val itemsByResolution = receipts.allItemsByResolution()
-    val itemsByTag = receipts.allItemsByTag()
-    val itemsByWallet = receipts.itemsByWallet()
-    val itemsByStore = receipts.itemsByStore()
-    val itemsByTransactionType = receipts.allItemsByTransactionTypes()
+    val itemsByCategory = receipts.allItemsByAggregatable(ItemAggregationParameter.CATEGORY)
+    val itemsByItemCurrency = receipts.allItemsByAggregatable(ItemAggregationParameter.CURRENCY)
+    val itemsByReceiptCurrency = receipts.allItemsByAggregatable(ReceiptAggregationParameter.RECEIPT_CURRENCY)
+    val itemsByReceiptChargeCurrency = receipts.allItemsByAggregatable(ReceiptAggregationParameter.CHARGE_CURRENCY)
+    val itemsByItemLocation = receipts.allItemsByAggregatable(ItemAggregationParameter.LOCATION)
+    val itemsByReceiptLocation = receipts.allItemsByAggregatable(ReceiptAggregationParameter.LOCATION)
+    val itemsByResolution = receipts.allItemsByAggregatable(ItemAggregationParameter.RESOLUTION)
+    val itemsByTag = receipts.allItemsByAggregatable(ItemAggregationParameter.TAG)
+    val itemsByWallet = receipts.allItemsByAggregatable(ReceiptAggregationParameter.WALLET)
+    val itemsByStore = receipts.allItemsByAggregatable(ReceiptAggregationParameter.STORE)
+    val itemsByTransactionType = receipts.allItemsByAggregatable(ItemAggregationParameter.TRANSACTION_TYPE)
 
 
     val currencyAmountsByCategory = itemsByCategory.aggregateCurrencyAmounts()
@@ -84,18 +86,19 @@ fun main(args: Array<String>) {
     val currencyAmountsByStore = itemsByStore.aggregateCurrencyAmounts()
     val currencyAmountsByTransactionType = itemsByTransactionType.aggregateCurrencyAmounts()
 
-    //val currencyAmountsByCategoryAndResolution = itemsByCategory.map { (name, items) ->
-    //    name to items.itemsByResolution()
-    //}
-//
-    //currencyAmountsByCategoryAndResolution.forEach { (category, itemsInCategoryByResolution) ->
-    //    println("Category: ${category.name} has items by tag:")
-    //    val currencyAmountsInCategoryByResolution = itemsInCategoryByResolution.aggregateCurrencyAmounts()
-    //    currencyAmountsInCategoryByResolution.printFormatted()
-    //}
+
+    val currencyAmountsByCategoryAndResolution = receipts
+        .allItemsByAggregatable(ItemAggregationParameter.CATEGORY)
+        .itemsByAggregatable(ItemAggregationParameter.RESOLUTION)
+
+    currencyAmountsByCategoryAndResolution.forEach { (category, itemsInCategoryByResolution) ->
+        println("Category: ${category.name} has items by resolution:")
+        val currencyAmountsInCategoryByResolution = itemsInCategoryByResolution.aggregateCurrencyAmounts()
+        currencyAmountsInCategoryByResolution.printFormatted()
+    }
 
 
-    currencyAmountsByTransactionType.printFormatted()
+    //currencyAmountsByStore.printFormatted()
 
     //receipts.forEach { receipt ->
     //    println("RECEIPT: ${receipt.store.name} on ${receipt.date} cost ${receipt.receiptCurrencyAmount}")
@@ -133,182 +136,51 @@ fun Map<out NameableEntity, List<ItemModel>>.aggregateCurrencyAmounts(): Map<Str
     }.toMap()
 }
 
-fun List<ReceiptModel>.allItems(): List<ItemModel> {
+fun Collection<ReceiptModel>.allItems(): List<ItemModel> {
     return this.flatMap { it.items }
 }
 
-fun List<ReceiptModel>.distinctItemCategories(): List<CategoryModel> {
-    return this.allItems().distinctCategories()
+fun Collection<ReceiptModel>.allItemsByAggregatable(itemAggregationParameter: ItemAggregationParameter): Map<NameableEntity, List<ItemModel>> {
+    return this.allItems().itemsByAggregatable(itemAggregationParameter)
 }
 
-fun List<ItemModel>.distinctCategories(): List<CategoryModel> {
-    return this.map { it.category }.distinct()
-}
-
-fun List<ReceiptModel>.allItemsByCategory(): Map<CategoryModel, List<ItemModel>> {
-    return this.allItems().itemsByCategory()
-}
-
-fun List<ItemModel>.itemsByCategory(): Map<CategoryModel, List<ItemModel>> {
-    val categories = distinctCategories()
-    return categories.associateWith { category ->
-        this.filter { item -> item.category == category }
+fun Map<NameableEntity, List<ItemModel>>.itemsByAggregatable(itemAggregationParameter: ItemAggregationParameter): Map<NameableEntity, Map<NameableEntity, List<ItemModel>>> {
+    return this.keys.associateWith { parentNameableEntity ->
+        val itemsForThisNameableEntity = this[parentNameableEntity] ?: emptyList()
+        val aggregatableValues = itemsForThisNameableEntity.distinctItemAggregatable(itemAggregationParameter)
+        aggregatableValues.associateWith { aggregationValue ->
+            itemsForThisNameableEntity.filter { item -> item.getAggregationParameters(itemAggregationParameter).contains(aggregationValue) }
+        }
     }
 }
 
-fun List<ReceiptModel>.distinctItemCurrencies(): List<CurrencyModel> {
-    return this.flatMap { it.items.distinctCurrencies() }.distinct()
-}
-
-fun List<ItemModel>.distinctCurrencies(): List<CurrencyModel> {
-    return this.map { it.currencyAmount.currency }.distinct()
-}
-
-fun List<ReceiptModel>.distinctReceiptCurrencies(): List<CurrencyModel> {
-    return this.map { it.receiptCurrencyAmount.currency }.distinct()
-}
-
-fun List<ReceiptModel>.distinctReceiptChargeCurrencies(): List<CurrencyModel> {
-    return this.map { it.chargeCurrencyAmount.currency }.distinct()
-}
-
-fun List<ReceiptModel>.allItemsByItemCurrency(): Map<CurrencyModel, List<ItemModel>> {
-    return this.allItems().itemsByCurrency()
-}
-
-fun List<ItemModel>.itemsByCurrency(): Map<CurrencyModel, List<ItemModel>> {
-    val currencies = distinctCurrencies()
-    return currencies.associateWith { curreny ->
-        this.filter { item -> item.currencyAmount.currency == curreny }
+fun Collection<ItemModel>.itemsByAggregatable(itemAggregationParameter: ItemAggregationParameter): Map<NameableEntity, List<ItemModel>> {
+    val aggregatableValues = this.distinctItemAggregatable(itemAggregationParameter)
+    return aggregatableValues.associateWith { aggregationValue ->
+        this.filter { item -> item.getAggregationParameters(itemAggregationParameter).contains(aggregationValue) }
     }
 }
 
-fun List<ReceiptModel>.itemsByReceiptCurrency(): Map<CurrencyModel, List<ItemModel>> {
-    val currencies = distinctReceiptCurrencies()
-    return currencies.associateWith { currency ->
+fun Collection<ReceiptModel>.allItemsByAggregatable(receiptAggregationParameter: ReceiptAggregationParameter): Map<NameableEntity, List<ItemModel>> {
+    val aggregatableValues = this.distinctReceiptAggregatable(receiptAggregationParameter)
+    return aggregatableValues.associateWith { aggregationValue ->
         this
-            .filter { it.receiptCurrencyAmount.currency == currency }
+            .filter { it.getAggregationParameter(receiptAggregationParameter) == aggregationValue}
             .flatMap { it.items }
     }
 }
 
-fun List<ReceiptModel>.itemsByReceiptChargeCurrency(): Map<CurrencyModel, List<ItemModel>> {
-    val currencies = distinctReceiptChargeCurrencies()
-    return currencies.associateWith { currency ->
-        this
-            .filter { it.chargeCurrencyAmount.currency == currency }
-            .flatMap { it.items }
-    }
+
+
+
+fun Collection<ItemModel>.distinctItemAggregatable(itemAggregationParameter: ItemAggregationParameter): List<NameableEntity> {
+    return this.flatMap { it.getAggregationParameters(itemAggregationParameter) }.distinct()
 }
 
-fun List<ReceiptModel>.distinctReceiptLocations(): List<LocationModel> {
-    return this.map { it.location }.distinct()
+fun Collection<ReceiptModel>.distinctReceiptItemAggregatable(itemAggregationParameter: ItemAggregationParameter): List<NameableEntity> {
+    return this.flatMap { it.getAggregationParameters(itemAggregationParameter) }.distinct()
 }
 
-fun List<ReceiptModel>.distinctItemLocations(): List<LocationModel> {
-    return this.flatMap { it.items.distinctLocations() }.distinct()
-}
-
-fun List<ItemModel>.distinctLocations(): List<LocationModel> {
-    return this.map { it.location }.distinct()
-}
-
-fun List<ReceiptModel>.allItemsByItemLocation(): Map<LocationModel, List<ItemModel>> {
-    return this.allItems().itemsByLocation()
-}
-
-fun List<ItemModel>.itemsByLocation(): Map<LocationModel, List<ItemModel>> {
-    val locations = this.distinctLocations()
-    return locations.associateWith { location ->
-        this.filter { item -> item.location == location }
-    }
-}
-
-fun List<ReceiptModel>.itemsByReceiptLocation(): Map<LocationModel, List<ItemModel>> {
-    val locations = this.distinctReceiptLocations()
-    return locations.associateWith { location ->
-        this.filter { it.location == location }
-            .flatMap { receipt -> receipt.items }
-    }
-}
-
-fun List<ReceiptModel>.distinctItemResolutions(): List<ResolutionModel> {
-    return this.flatMap { it.items.distinctResolutions() }.distinct()
-}
-
-fun List<ItemModel>.distinctResolutions(): List<ResolutionModel> {
-    return this.map { it.resolution }.distinct()
-}
-
-fun List<ReceiptModel>.allItemsByResolution(): Map<ResolutionModel, List<ItemModel>> {
-    return this.allItems().itemsByResolution()
-}
-
-fun List<ItemModel>.itemsByResolution(): Map<ResolutionModel, List<ItemModel>> {
-    val resolutions = this.distinctResolutions()
-    return resolutions.associateWith { resolution ->
-        this.filter { item -> item.resolution == resolution }
-    }
-}
-
-fun List<ReceiptModel>.distinctItemTags(): List<TagModel> {
-    return this.flatMap { it.items.flatMap { it.tags } }.distinct()
-}
-
-fun List<ItemModel>.distinctTags(): List<TagModel> {
-    return this.flatMap { it.tags }.distinct()
-}
-
-fun List<ReceiptModel>.allItemsByTag(): Map<TagModel, List<ItemModel>> {
-    return this.allItems().itemsByTag()
-}
-
-fun List<ItemModel>.itemsByTag(): Map<TagModel, List<ItemModel>> {
-    val tags = this.distinctTags()
-    return tags.associateWith { tag ->
-        this.filter { item -> item.tags.contains(tag) }
-    }
-}
-
-fun List<ReceiptModel>.distinctReceiptWallets(): List<WalletModel> {
-    return this.map { it.wallet }.distinct()
-}
-
-fun List<ReceiptModel>.itemsByWallet(): Map<WalletModel, List<ItemModel>> {
-    val wallets = this.distinctReceiptWallets()
-    return wallets.associateWith { wallet ->
-        this.filter { it.wallet == wallet }
-            .flatMap { receipt -> receipt.items }
-    }
-}
-
-fun List<ReceiptModel>.distinctReceiptStores(): List<StoreModel> {
-    return this.map { it.store }.distinct()
-}
-
-fun List<ReceiptModel>.itemsByStore(): Map<StoreModel, List<ItemModel>> {
-    val stores = this.distinctReceiptStores()
-    return stores.associateWith { store ->
-        this.filter { it.store == store }
-            .flatMap { receipt -> receipt.items }
-    }
-}
-
-fun List<ReceiptModel>.distinctItemTransactionTypes(): List<TransactionType> {
-    return this.flatMap { it.items.distinctTransactionTypes() }.distinct()
-}
-
-fun List<ItemModel>.distinctTransactionTypes(): List<TransactionType> {
-    return this.map { it.transactionType }.distinct()
-}
-
-fun List<ReceiptModel>.allItemsByTransactionTypes(): Map<TransactionType, List<ItemModel>> {
-    return this.allItems().itemsByTransactionTypes()
-}
-
-fun List<ItemModel>.itemsByTransactionTypes(): Map<TransactionType, List<ItemModel>> {
-    val transactionTypes = this.distinctTransactionTypes()
-    return transactionTypes.associateWith { transactionType ->
-        this.filter { item -> item.transactionType == transactionType }
-    }
+fun Collection<ReceiptModel>.distinctReceiptAggregatable(receiptAggregationParameter: ReceiptAggregationParameter): List<NameableEntity> {
+    return this.map { it.getAggregationParameter(receiptAggregationParameter) }.distinct()
 }

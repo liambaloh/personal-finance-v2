@@ -1,4 +1,4 @@
-package com.liamlime.limefinance.api.model
+package com.liamlime.limefinance.api.models
 
 import java.math.BigDecimal
 

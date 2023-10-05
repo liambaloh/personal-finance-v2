@@ -1,7 +1,7 @@
 package com.liamlime.limefinance.import.model
 
-import com.liamlime.limefinance.api.datatype.TransactionType
-import com.liamlime.limefinance.api.model.*
+import com.liamlime.limefinance.api.datatypes.TransactionType
+import com.liamlime.limefinance.api.models.*
 import java.awt.Color
 import java.math.BigDecimal
 import java.time.LocalDateTime

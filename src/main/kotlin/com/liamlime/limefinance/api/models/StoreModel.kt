@@ -1,8 +1,9 @@
-package com.liamlime.limefinance.api.model
+package com.liamlime.limefinance.api.models
 
+import com.liamlime.limefinance.api.interfaces.NameableEntity
 import java.awt.Color
 
-data class ResolutionModel(
+data class StoreModel(
     override val name: String,
     val glyph: String,
     val textColor: Color,
