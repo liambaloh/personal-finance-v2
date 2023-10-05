@@ -58,14 +58,14 @@ fun main(args: Array<String>) {
         )
     }
 
-    val itemsByCategory = receipts.itemsByCategory()
-    val itemsByItemCurrency = receipts.itemsByItemCurrency()
+    val itemsByCategory = receipts.allItemsByCategory()
+    val itemsByItemCurrency = receipts.allItemsByItemCurrency()
     val itemsByReceiptCurrency = receipts.itemsByReceiptCurrency()
     val itemsByReceiptChargeCurrency = receipts.itemsByReceiptChargeCurrency()
-    val itemsByItemLocation = receipts.itemsByItemLocation()
+    val itemsByItemLocation = receipts.allItemsByItemLocation()
     val itemsByReceiptLocation = receipts.itemsByReceiptLocation()
-    val itemsByResolution = receipts.itemsByResolution()
-    val itemsByTag = receipts.itemsByTag()
+    val itemsByResolution = receipts.allItemsByResolution()
+    val itemsByTag = receipts.allItemsByTag()
     val itemsByWallet = receipts.itemsByWallet()
     val itemsByStore = receipts.itemsByStore()
 
@@ -81,8 +81,18 @@ fun main(args: Array<String>) {
     val currencyAmountsByWallet = itemsByWallet.aggregateCurrencyAmounts()
     val currencyAmountsByStore = itemsByStore.aggregateCurrencyAmounts()
 
+    val currencyAmountsByCategoryAndResolution = itemsByCategory.map { (name, items) ->
+        name to items.itemsByResolution()
+    }
 
-    currencyAmountsByCategory.printFormatted()
+    currencyAmountsByCategoryAndResolution.forEach { (category, itemsInCategoryByResolution) ->
+        println("Category: ${category.name} has items by tag:")
+        val currencyAmountsInCategoryByResolution = itemsInCategoryByResolution.aggregateCurrencyAmounts()
+        currencyAmountsInCategoryByResolution.printFormatted()
+    }
+
+
+    //currencyAmountsByTag.printFormatted()
 
     //receipts.forEach { receipt ->
     //    println("RECEIPT: ${receipt.store.name} on ${receipt.date} cost ${receipt.receiptCurrencyAmount}")
@@ -120,21 +130,35 @@ fun Map<out NameableEntity, List<ItemModel>>.aggregateCurrencyAmounts(): Map<Str
     }.toMap()
 }
 
-fun List<ReceiptModel>.distinctItemCategories(): List<CategoryModel> {
-    return this.flatMap { it.items.map { it.category } }.distinct()
+fun List<ReceiptModel>.allItems(): List<ItemModel> {
+    return this.flatMap { it.items }
 }
 
-fun List<ReceiptModel>.itemsByCategory(): Map<CategoryModel, List<ItemModel>> {
-    val categories = distinctItemCategories()
+fun List<ReceiptModel>.distinctItemCategories(): List<CategoryModel> {
+    return this.allItems().distinctCategories()
+}
+
+fun List<ItemModel>.distinctCategories(): List<CategoryModel> {
+    return this.map { it.category }.distinct()
+}
+
+fun List<ReceiptModel>.allItemsByCategory(): Map<CategoryModel, List<ItemModel>> {
+    return this.allItems().itemsByCategory()
+}
+
+fun List<ItemModel>.itemsByCategory(): Map<CategoryModel, List<ItemModel>> {
+    val categories = distinctCategories()
     return categories.associateWith { category ->
-        this.flatMap { receipt ->
-            receipt.items.filter { item -> item.category == category }
-        }
+        this.filter { item -> item.category == category }
     }
 }
 
 fun List<ReceiptModel>.distinctItemCurrencies(): List<CurrencyModel> {
     return this.flatMap { it.items.map { it.currencyAmount.currency } }.distinct()
+}
+
+fun List<ItemModel>.distinctCurrencies(): List<CurrencyModel> {
+    return this.map { it.currencyAmount.currency }.distinct()
 }
 
 fun List<ReceiptModel>.distinctReceiptCurrencies(): List<CurrencyModel> {
@@ -145,12 +169,14 @@ fun List<ReceiptModel>.distinctReceiptChargeCurrencies(): List<CurrencyModel> {
     return this.map { it.chargeCurrencyAmount.currency }.distinct()
 }
 
-fun List<ReceiptModel>.itemsByItemCurrency(): Map<CurrencyModel, List<ItemModel>> {
-    val currencies = distinctItemCurrencies()
-    return currencies.associateWith { currency ->
-        this.flatMap { receipt ->
-            receipt.items.filter { item -> item.currencyAmount.currency == currency }
-        }
+fun List<ReceiptModel>.allItemsByItemCurrency(): Map<CurrencyModel, List<ItemModel>> {
+    return this.allItems().itemsByCurrency()
+}
+
+fun List<ItemModel>.itemsByCurrency(): Map<CurrencyModel, List<ItemModel>> {
+    val currencies = distinctCurrencies()
+    return currencies.associateWith { curreny ->
+        this.filter { item -> item.currencyAmount.currency == curreny }
     }
 }
 
@@ -180,12 +206,18 @@ fun List<ReceiptModel>.distinctItemLocations(): List<LocationModel> {
     return this.flatMap { it.items.map { it.location } }.distinct()
 }
 
-fun List<ReceiptModel>.itemsByItemLocation(): Map<LocationModel, List<ItemModel>> {
-    val locations = this.distinctItemLocations()
+fun List<ItemModel>.distinctLocations(): List<LocationModel> {
+    return this.map { it.location }.distinct()
+}
+
+fun List<ReceiptModel>.allItemsByItemLocation(): Map<LocationModel, List<ItemModel>> {
+    return this.allItems().itemsByLocation()
+}
+
+fun List<ItemModel>.itemsByLocation(): Map<LocationModel, List<ItemModel>> {
+    val locations = this.distinctLocations()
     return locations.associateWith { location ->
-        this.flatMap { receipt ->
-            receipt.items.filter { item -> item.location == location }
-        }
+        this.filter { item -> item.location == location }
     }
 }
 
@@ -201,12 +233,18 @@ fun List<ReceiptModel>.distinctItemResolutions(): List<ResolutionModel> {
     return this.flatMap { it.items.map { it.resolution } }.distinct()
 }
 
-fun List<ReceiptModel>.itemsByResolution(): Map<ResolutionModel, List<ItemModel>> {
-    val resolutions = this.distinctItemResolutions()
+fun List<ItemModel>.distinctResolutions(): List<ResolutionModel> {
+    return this.map { it.resolution }.distinct()
+}
+
+fun List<ReceiptModel>.allItemsByResolution(): Map<ResolutionModel, List<ItemModel>> {
+    return this.allItems().itemsByResolution()
+}
+
+fun List<ItemModel>.itemsByResolution(): Map<ResolutionModel, List<ItemModel>> {
+    val resolutions = this.distinctResolutions()
     return resolutions.associateWith { resolution ->
-        this.flatMap { receipt ->
-            receipt.items.filter { item -> item.resolution == resolution }
-        }
+        this.filter { item -> item.resolution == resolution }
     }
 }
 
@@ -214,12 +252,18 @@ fun List<ReceiptModel>.distinctItemTags(): List<TagModel> {
     return this.flatMap { it.items.flatMap { it.tags } }.distinct()
 }
 
-fun List<ReceiptModel>.itemsByTag(): Map<TagModel, List<ItemModel>> {
-    val tags = this.distinctItemTags()
+fun List<ItemModel>.distinctTags(): List<TagModel> {
+    return this.flatMap { it.tags }.distinct()
+}
+
+fun List<ReceiptModel>.allItemsByTag(): Map<TagModel, List<ItemModel>> {
+    return this.allItems().itemsByTag()
+}
+
+fun List<ItemModel>.itemsByTag(): Map<TagModel, List<ItemModel>> {
+    val tags = this.distinctTags()
     return tags.associateWith { tag ->
-        this.flatMap { receipt ->
-            receipt.items.filter { item -> item.tags.contains(tag) }
-        }
+        this.filter { item -> item.tags.contains(tag) }
     }
 }
 
