@@ -155,7 +155,7 @@ fun String.toWalletModel(): WalletModel {
 }
 
 fun String.toTransactionType(): TransactionType {
-    return when (this) {
+    return when (this.trim().uppercase()) {
         "EXPENSE" -> TransactionType.EXPENSE
         "INCOME" -> TransactionType.INCOME
         "TRANSFER" -> TransactionType.TRANSFER
