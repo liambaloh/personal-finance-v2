@@ -21,21 +21,37 @@ data class ReceiptImportModel(
     val note: String = "",
     val items: MutableList<ItemImportModel> = mutableListOf(),
     val discounts: MutableList<DiscountImportModel> = mutableListOf()
-){
-    fun validateReceiptCurrencyAmountWithItemsAndDiscounts(): Boolean{
+) {
+    fun validateReceiptCurrencyAmountWithItemsAndDiscounts(): Boolean {
         val receiptCurrencyAmount = this.receiptAmount
         val itemsCurrencyAmount = this.items.map { it.amount }.sum()
         val discountsCurrencyAmount = this.discounts.map { it.amount }.sum()
         return receiptCurrencyAmount == itemsCurrencyAmount + discountsCurrencyAmount
     }
 
-    fun validateAmountSignCorrespondsToTransactionType(): Boolean{
+    fun validateAmountSignCorrespondsToTransactionType(): Boolean {
         return items.map { it.validateAmountSignCorrespondsToTransactionType() }.all { it }
     }
 }
 
-fun List<BigDecimal>.sum(): BigDecimal{
+fun List<BigDecimal>.sum(): BigDecimal {
     return this.fold(BigDecimal.ZERO) { acc, bigDecimal -> acc + bigDecimal }
+}
+
+fun List<ReceiptImportModel>.validateReciprocalTransfer() {
+    this
+        .flatMap { receipt -> receipt.items.map { item -> Pair(receipt, item) } }
+        .filter { it.second.transactionType.uppercase().trim() == "TRANSFER" }
+        .fold(mutableListOf<Pair<ReceiptImportModel, ItemImportModel>>()){ acc, (receipt, item) ->
+            val found = acc.firstOrNull { it.first.date == receipt.date && it.second.amount == -item.amount }
+            if(found != null){
+                acc.remove(found)
+            }else{
+                acc.add(Pair(receipt, item))
+            }
+            acc
+        }
+        .forEach { (receipt, item) -> println("TRANSFER ON ${receipt.date}: ${item.amount}") }
 }
 
 fun List<ReceiptImportModel>.distinctWallets(): List<String> {
@@ -123,7 +139,10 @@ fun String.toResolutionModel(): ResolutionModel {
         name = this,
         glyph = "",
         textColor = randomForegroundColor(),
-        backgroundColor = randomBackgroundColor()
+        backgroundColor = randomBackgroundColor(),
+        utility = 0.0,
+        currentlyOwned = false,
+        expected = false
     )
 }
 
@@ -164,34 +183,6 @@ fun String.toTransactionType(): TransactionType {
     }
 }
 
-fun ItemImportModel.toItemModel(
-    categories: List<CategoryModel>,
-    currencies: List<CurrencyModel>,
-    resolutions: List<ResolutionModel>,
-    locations: List<LocationModel>,
-    tags: List<TagModel>
-): ItemModel {
-    return ItemModel(
-        transactionType = this.transactionType.toTransactionType(),
-        category = categories.first { it.name == this.category },
-        currencyAmount = currencies.first { it.name == this.currency }.toCurrencyAmountModel(this.amount),
-        count = this.count,
-        name = this.name,
-        resolution = resolutions.first { it.name == this.resolution },
-        resolutionDate = LocalDateTime.parse(this.resolutionDate, importerDateTimeFormatter),
-        location = locations.first { it.name == this.location },
-        tags = this.tags.map { tag -> tags.first{ it.name == tag } },
-        note = this.note
-    )
-}
-
-fun DiscountImportModel.toDiscountModel(currencies: List<CurrencyModel>): DiscountModel{
-    return DiscountModel(
-        name = this.name,
-        currencyAmount = currencies.first { it.name == this.currency }.toCurrencyAmountModel(this.amount),
-    )
-}
-
 fun ReceiptImportModel.toReceiptModel(
     wallets: List<WalletModel>,
     stores: List<StoreModel>,
@@ -205,8 +196,10 @@ fun ReceiptImportModel.toReceiptModel(
         date = LocalDateTime.parse(this.date, importerDateTimeFormatter),
         wallet = wallets.first { it.name == this.wallet },
         store = stores.first { it.name == this.store },
-        receiptCurrencyAmount = currencies.first { it.name == this.receiptCurrency }.toCurrencyAmountModel(this.receiptAmount),
-        chargeCurrencyAmount = currencies.first { it.name == this.chargeCurrency }.toCurrencyAmountModel(this.chargeAmount),
+        receiptCurrencyAmount = currencies.first { it.name == this.receiptCurrency }
+            .toCurrencyAmountModel(this.receiptAmount),
+        chargeCurrencyAmount = currencies.first { it.name == this.chargeCurrency }
+            .toCurrencyAmountModel(this.chargeAmount),
         location = locations.first { it.name == this.location },
         note = this.note,
         items = this.items.map { item -> item.toItemModel(categories, currencies, resolutions, locations, tags) },

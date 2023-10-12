@@ -7,5 +7,8 @@ data class ResolutionModel(
     override val name: String,
     val glyph: String,
     val textColor: Color,
-    val backgroundColor: Color
+    val backgroundColor: Color,
+    val utility: Double,
+    val currentlyOwned: Boolean,
+    val expected: Boolean
 ): NameableEntity

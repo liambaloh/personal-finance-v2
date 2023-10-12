@@ -4,7 +4,7 @@ import com.liamlime.limefinance.api.datatypes.ItemAggregationParameter
 import com.liamlime.limefinance.api.datatypes.ReceiptAggregationParameter
 import com.liamlime.limefinance.api.interfaces.NameableEntity
 import com.liamlime.limefinance.api.models.*
-import com.liamlime.limefinance.import.ImportIn
+import com.liamlime.limefinance.import.*
 import com.liamlime.limefinance.import.model.*
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import java.math.BigDecimal
@@ -14,14 +14,48 @@ class LimeFinanceV2Application
 
 fun main(args: Array<String>) {
     //runApplication<LimeFinanceV2Application>(*args)
+    val categoryImports = ImportCategories().doImport()
+    val locationImports = ImportLocations().doImport()
+    val resolutionImports = ImportResolutions().doImport()
+    val storeImports = ImportStores().doImport()
+    val tagImports = ImportTags().doImport()
+    val walletImports = ImportWallets().doImport()
+    val categoriesFromImport = categoryImports.map { it.toCategoryModel() }
+    val locationsFromImport = locationImports.map { it.toLocationModel() }
+    val resolutionsFromImport = resolutionImports.map { it.toResolutionModel() }
+    val storesFromImport = storeImports.map { it.toStoreModel() }
+    val tagsFromImport = tagImports.map { it.toTagModel() }
+    val walletsFromImport = walletImports.map { it.toWalletModel() }
+
+
     val receiptImports = ImportIn().doImport()
-    val categories = receiptImports.distinctCategories().map { it.toCategoryModel() }
-    val tags = receiptImports.distinctTags().map { it.toTagModel() }
-    val resolutions = receiptImports.distinctResolutions().map { it.toResolutionModel() }
-    val currencies = receiptImports.distinctCurrencies().map { it.toCurrencyModel() }
-    val locations = receiptImports.distinctLocations().map { it.toLocationModel() }
-    val stores = receiptImports.distinctStores().map { it.toStoreModel() }
-    val wallets = receiptImports.distinctWallets().map { it.toWalletModel() }
+    val categoriesFromReceipts = receiptImports.distinctCategories().map { it.toCategoryModel() }
+    val tagsFromReceipts = receiptImports.distinctTags().map { it.toTagModel() }
+    val resolutionsFromReceipts = receiptImports.distinctResolutions().map { it.toResolutionModel() }
+    val currenciesFromReceipts = receiptImports.distinctCurrencies().map { it.toCurrencyModel() }
+    val locationsFromReceipts = receiptImports.distinctLocations().map { it.toLocationModel() }
+    val storesFromReceipts = receiptImports.distinctStores().map { it.toStoreModel() }
+    val walletsFromReceipts = receiptImports.distinctWallets().map { it.toWalletModel() }
+
+    val categories = categoriesFromImport
+        .union(categoriesFromReceipts)
+        .distinctBy { it.name }
+    val wallets = walletsFromImport
+        .union(walletsFromReceipts)
+        .distinctBy { it.name }
+    val stores = storesFromImport
+        .union(storesFromReceipts)
+        .distinctBy { it.name }
+    val locations = locationsFromImport
+        .union(locationsFromReceipts)
+        .distinctBy { it.name }
+    val tags = tagsFromImport
+        .union(tagsFromReceipts)
+        .distinctBy { it.name }
+    val resolutions = resolutionsFromImport
+        .union(resolutionsFromReceipts)
+        .distinctBy { it.name }
+    val currencies = currenciesFromReceipts
 
     println("Looking for mismatches between receipt amount and sum of items and discounts...")
     receiptImports.forEach {
@@ -37,7 +71,7 @@ fun main(args: Array<String>) {
         }
     }
 
-    println("Looking for mismatches between receipt amount and sum of items and discounts...")
+    println("Looking for mismatches between amount signs and transaction types (e.g. negative income or positive expense)...")
     receiptImports.forEach {
         if (!it.validateAmountSignCorrespondsToTransactionType()) {
             println("Receipt ${it.store} on ${it.date} failed amount sign verification: ")
@@ -48,6 +82,7 @@ fun main(args: Array<String>) {
             }
         }
     }
+    receiptImports.validateReciprocalTransfer()
 
     val receipts = receiptImports.map {
         it.toReceiptModel(
@@ -79,6 +114,12 @@ fun main(args: Array<String>) {
     val itemsByChargeAmountSign = receipts.allItemsByAggregatable(ReceiptAggregationParameter.CHARGE_AMOUNT_SIGN)
     val itemsByItemAmountSign = receipts.allItemsByAggregatable(ItemAggregationParameter.AMOUNT_SIGN)
 
+    receipts
+        .receiptsByAggregatable(ReceiptAggregationParameter.YEAR)
+        .map { (year, receipts) ->
+            year to receipts.sumCharge()
+        }.toMap()
+        .printFormatted()
 
     val currencyAmountsByCategory = itemsByCategory.aggregateCurrencyAmounts()
     val currencyAmountsByItemCurrency = itemsByItemCurrency.aggregateCurrencyAmounts()
@@ -98,7 +139,6 @@ fun main(args: Array<String>) {
     val currencyAmountsByChargeAmountSign = itemsByChargeAmountSign.aggregateCurrencyAmounts()
     val currencyAmountsByItemAmountSign = itemsByItemAmountSign.aggregateCurrencyAmounts()
 
-
     val currencyAmountsByCategoryAndResolution = receipts
         .allItemsByAggregatable(ItemAggregationParameter.CATEGORY)
         .itemsByAggregatable(ItemAggregationParameter.RESOLUTION)
@@ -108,26 +148,26 @@ fun main(args: Array<String>) {
         .itemsByAggregatable(ItemAggregationParameter.AMOUNT_SIGN)
         .print1()
 
-    //currencyAmountsByCategoryAndResolution.forEach { (category, itemsInCategoryByResolution) ->
-    //    println("Category: ${category.name} has items by resolution:")
-    //    val currencyAmountsInCategoryByResolution = itemsInCategoryByResolution.aggregateCurrencyAmounts()
-    //    currencyAmountsInCategoryByResolution.printFormatted()
-    //}
+    currencyAmountsByCategoryAndResolution.forEach { (category, itemsInCategoryByResolution) ->
+        println("Category: ${category.name} has items by resolution:")
+        val currencyAmountsInCategoryByResolution = itemsInCategoryByResolution.aggregateCurrencyAmounts()
+        currencyAmountsInCategoryByResolution.printFormatted()
+    }
 
-    //currencyAmountsByTransactionTypeAndItemAmountSign.print1()
+    //currencyAmountsByTransactionTypeAndItemAmountSign()
 
 
-    //currencyAmountsByItemAmountSign.printFormatted()
+    currencyAmountsByYear.printFormatted()
 
-    //receipts.forEach { receipt ->
-    //    println("RECEIPT: ${receipt.store.name} on ${receipt.date} cost ${receipt.receiptCurrencyAmount}")
-    //    receipt.items.forEach { item ->
-    //        println("\tITEM: ${item.name} cost ${item.currencyAmount}")
-    //    }
-    //    receipt.discounts.forEach { discount ->
-    //        println("\tDISCOUNT: ${discount.name} cost ${discount.currencyAmount}")
-    //    }
-    //}
+    receipts.forEach { receipt ->
+        println("RECEIPT: ${receipt.store.name} on ${receipt.date} cost ${receipt.receiptCurrencyAmount}")
+        receipt.items.forEach { item ->
+            println("\tITEM: ${item.name} cost ${item.currencyAmount}")
+        }
+        receipt.discounts.forEach { discount ->
+            println("\tDISCOUNT: ${discount.name} cost ${discount.currencyAmount}")
+        }
+    }
 }
 
 fun Map<NameableEntity, Map<NameableEntity, Map<NameableEntity, Map<NameableEntity, List<ItemModel>>>>>.print3(
@@ -222,6 +262,14 @@ fun Collection<ReceiptModel>.allItemsByAggregatable(receiptAggregationParameter:
     }
 }
 
+fun Collection<ReceiptModel>.receiptsByAggregatable(receiptAggregationParameter: ReceiptAggregationParameter): Map<NameableEntity, List<ReceiptModel>> {
+    val aggregatableValues = this.distinctReceiptAggregatable(receiptAggregationParameter)
+    return aggregatableValues.associateWith { aggregationValue ->
+        this
+            .filter { it.getAggregationParameter(receiptAggregationParameter).name == aggregationValue.name }
+    }
+}
+
 
 fun Collection<ItemModel>.distinctItemAggregatable(itemAggregationParameter: ItemAggregationParameter): List<NameableEntity> {
     return this.flatMap { it.getAggregationParameters(itemAggregationParameter) }.distinct()
@@ -233,4 +281,15 @@ fun Collection<ReceiptModel>.distinctReceiptItemAggregatable(itemAggregationPara
 
 fun Collection<ReceiptModel>.distinctReceiptAggregatable(receiptAggregationParameter: ReceiptAggregationParameter): List<NameableEntity> {
     return this.map { it.getAggregationParameter(receiptAggregationParameter) }.distinct()
+}
+
+fun Collection<ReceiptModel>.sumCharge(): List<CurrencyAmountModel> {
+    return this
+        .groupBy { it.chargeCurrencyAmount.currency }
+        .map { (currency, receipts) ->
+            CurrencyAmountModel(
+                currency = currency,
+                amount = receipts.sumOf { it.chargeCurrencyAmount.amount }
+            )
+        }
 }

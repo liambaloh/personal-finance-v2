@@ -1,6 +1,8 @@
 package com.liamlime.limefinance.import.model
 
+import com.liamlime.limefinance.api.models.*
 import java.math.BigDecimal
+import java.time.LocalDateTime
 
 data class ItemImportModel(
     val transactionType: String,
@@ -39,4 +41,25 @@ fun List<ItemImportModel>.distinctLocations(): List<String> {
 
 fun List<ItemImportModel>.distinctResolutions(): List<String> {
     return this.map { it.resolution }.distinct()
+}
+
+fun ItemImportModel.toItemModel(
+    categories: List<CategoryModel>,
+    currencies: List<CurrencyModel>,
+    resolutions: List<ResolutionModel>,
+    locations: List<LocationModel>,
+    tags: List<TagModel>
+): ItemModel {
+    return ItemModel(
+        transactionType = this.transactionType.toTransactionType(),
+        category = categories.first { it.name == this.category },
+        currencyAmount = currencies.first { it.name == this.currency }.toCurrencyAmountModel(this.amount),
+        count = this.count,
+        name = this.name,
+        resolution = resolutions.first { it.name == this.resolution },
+        resolutionDate = LocalDateTime.parse(this.resolutionDate, importerDateTimeFormatter),
+        location = locations.first { it.name == this.location },
+        tags = this.tags.map { tag -> tags.first { it.name == tag } },
+        note = this.note
+    )
 }
