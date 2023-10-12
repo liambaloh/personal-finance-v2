@@ -30,6 +30,7 @@ data class ReceiptModel(
             ReceiptAggregationParameter.YEAR_MONTH_DAY -> Year("${date.year}-${date.month}-${date.dayOfMonth}")
             ReceiptAggregationParameter.RECEIPT_AMOUNT_SIGN -> receiptCurrencyAmount.amount.sign()
             ReceiptAggregationParameter.CHARGE_AMOUNT_SIGN -> chargeCurrencyAmount.amount.sign()
+            ReceiptAggregationParameter.WALLET_TYPE -> wallet.type
         }
     }
 

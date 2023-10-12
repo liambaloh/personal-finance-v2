@@ -114,6 +114,7 @@ fun main(args: Array<String>) {
     val itemsByReceiptAmountSign = receipts.allItemsByAggregatable(ReceiptAggregationParameter.RECEIPT_AMOUNT_SIGN)
     val itemsByChargeAmountSign = receipts.allItemsByAggregatable(ReceiptAggregationParameter.CHARGE_AMOUNT_SIGN)
     val itemsByItemAmountSign = receipts.allItemsByAggregatable(ItemAggregationParameter.AMOUNT_SIGN)
+    val itemsByWalletType = receipts.allItemsByAggregatable(ReceiptAggregationParameter.WALLET_TYPE)
 
     receipts
         .receiptsByAggregatable(ReceiptAggregationParameter.YEAR)
@@ -140,6 +141,7 @@ fun main(args: Array<String>) {
     val currencyAmountsByReceiptAmountSign = itemsByReceiptAmountSign.aggregateCurrencyAmounts()
     val currencyAmountsByChargeAmountSign = itemsByChargeAmountSign.aggregateCurrencyAmounts()
     val currencyAmountsByItemAmountSign = itemsByItemAmountSign.aggregateCurrencyAmounts()
+    val currencyAmountsByWalletType = itemsByWalletType.aggregateCurrencyAmounts()
 
     val currencyAmountsByCategoryAndResolution = receipts
         .allItemsByAggregatable(ItemAggregationParameter.CATEGORY)
@@ -158,9 +160,6 @@ fun main(args: Array<String>) {
 
     //currencyAmountsByTransactionTypeAndItemAmountSign()
 
-
-    currencyAmountsByYear.printFormatted()
-
     receipts.forEach { receipt ->
         println("RECEIPT: ${receipt.store.name} on ${receipt.date} cost ${receipt.receiptCurrencyAmount}")
         receipt.items.forEach { item ->
@@ -170,6 +169,9 @@ fun main(args: Array<String>) {
             println("\tDISCOUNT: ${discount.name} cost ${discount.currencyAmount}")
         }
     }
+
+
+    currencyAmountsByWalletType.printFormatted()
 }
 
 fun Map<NameableEntity, Map<NameableEntity, Map<NameableEntity, Map<NameableEntity, List<ItemModel>>>>>.print3(

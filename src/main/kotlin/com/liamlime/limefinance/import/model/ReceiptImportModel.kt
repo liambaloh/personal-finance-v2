@@ -1,6 +1,7 @@
 package com.liamlime.limefinance.import.model
 
 import com.liamlime.limefinance.api.datatypes.TransactionType
+import com.liamlime.limefinance.api.datatypes.WalletType
 import com.liamlime.limefinance.api.models.*
 import java.awt.Color
 import java.math.BigDecimal
@@ -169,7 +170,8 @@ fun String.toWalletModel(): WalletModel {
         name = this,
         glyph = "",
         textColor = randomForegroundColor(),
-        backgroundColor = randomBackgroundColor()
+        backgroundColor = randomBackgroundColor(),
+        type = WalletType.UNKNOWN
     )
 }
 
