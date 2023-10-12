@@ -181,6 +181,10 @@ fun String.toTransactionType(): TransactionType {
         "INCOME" -> TransactionType.INCOME
         "TRANSFER" -> TransactionType.TRANSFER
         "REIMBURSEMENT" -> TransactionType.REIMBURSEMENT
+        "CAPITALGAIN" -> TransactionType.CAPITAL_GAIN
+        "CAPITALLOSS" -> TransactionType.CAPITAL_LOSS
+        "INVESTMENT" -> TransactionType.INVESTMENT
+        "DIVESTMENT" -> TransactionType.DIVESTMENT
         else -> TransactionType.UNKNOWN
     }
 }

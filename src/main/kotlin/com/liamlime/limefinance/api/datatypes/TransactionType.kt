@@ -7,5 +7,10 @@ enum class TransactionType: NameableEntity {
     INCOME,
     EXPENSE,
     TRANSFER,
-    REIMBURSEMENT;
+    REIMBURSEMENT,
+    CAPITAL_GAIN,
+    CAPITAL_LOSS,
+    INVESTMENT,
+    DIVESTMENT
+    ;
 }

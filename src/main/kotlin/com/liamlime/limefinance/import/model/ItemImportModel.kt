@@ -19,9 +19,9 @@ data class ItemImportModel(
 ) {
     fun validateAmountSignCorrespondsToTransactionType(): Boolean {
         return when (transactionType) {
-            "income", "reimbursement" -> amount > BigDecimal.ZERO
-            "expense" -> amount < BigDecimal.ZERO
-            "transfer" -> amount != BigDecimal.ZERO
+            "income", "reimbursement", "capitalgain" -> amount >= BigDecimal.ZERO
+            "expense", "capitalloss" -> amount <= BigDecimal.ZERO
+            "transfer", "investment", "divestment" -> true
             else -> false
         }
     }

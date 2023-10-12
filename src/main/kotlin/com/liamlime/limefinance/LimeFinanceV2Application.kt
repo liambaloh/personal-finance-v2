@@ -72,7 +72,7 @@ fun main(args: Array<String>) {
     }
 
     println("Looking for mismatches between amount signs and transaction types (e.g. negative income or positive expense)...")
-    receiptImports.forEach {
+    val amountSignValidationPassed = receiptImports.fold(true) { acc, it ->
         if (!it.validateAmountSignCorrespondsToTransactionType()) {
             println("Receipt ${it.store} on ${it.date} failed amount sign verification: ")
             it.items.forEach { item ->
@@ -80,7 +80,13 @@ fun main(args: Array<String>) {
                     println("\tItem ${item.name} failed amount sign verification: Transaction type ${item.transactionType} with amount ${item.amount}")
                 }
             }
+            false
+        }else {
+            acc
         }
+    }
+    if(!amountSignValidationPassed){
+        throw Exception("Some receipts failed amount sign verification")
     }
     receiptImports.validateReciprocalTransfer()
 
@@ -150,15 +156,16 @@ fun main(args: Array<String>) {
     val currencyAmountsByTransactionTypeAndItemAmountSign = receipts
         .allItemsByAggregatable(ItemAggregationParameter.TRANSACTION_TYPE)
         .itemsByAggregatable(ItemAggregationParameter.AMOUNT_SIGN)
-        .print1()
+
+    val currencyAmountsByWalletsAndTransactionType = receipts
+        .allItemsByAggregatable(ReceiptAggregationParameter.WALLET)
+        .itemsByAggregatable(ItemAggregationParameter.TRANSACTION_TYPE)
 
     currencyAmountsByCategoryAndResolution.forEach { (category, itemsInCategoryByResolution) ->
         println("Category: ${category.name} has items by resolution:")
         val currencyAmountsInCategoryByResolution = itemsInCategoryByResolution.aggregateCurrencyAmounts()
         currencyAmountsInCategoryByResolution.printFormatted()
     }
-
-    //currencyAmountsByTransactionTypeAndItemAmountSign()
 
     receipts.forEach { receipt ->
         println("RECEIPT: ${receipt.store.name} on ${receipt.date} cost ${receipt.receiptCurrencyAmount}")
@@ -172,6 +179,9 @@ fun main(args: Array<String>) {
 
 
     currencyAmountsByWalletType.printFormatted()
+
+    currencyAmountsByWalletsAndTransactionType
+        .print1()
 }
 
 fun Map<NameableEntity, Map<NameableEntity, Map<NameableEntity, Map<NameableEntity, List<ItemModel>>>>>.print3(
