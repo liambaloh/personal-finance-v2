@@ -102,7 +102,8 @@ fun main(args: Array<String>) {
     val itemsByReceiptChargeCurrency = receipts.allItemsByAggregatable(ReceiptAggregationParameter.CHARGE_CURRENCY)
     val itemsByItemLocation = receipts.allItemsByAggregatable(ItemAggregationParameter.LOCATION)
     val itemsByReceiptLocation = receipts.allItemsByAggregatable(ReceiptAggregationParameter.LOCATION)
-    val itemsByResolution = receipts.allItemsByAggregatable(ItemAggregationParameter.RESOLUTION)
+    val itemsByCurrentState = receipts.allItemsByAggregatable(ItemAggregationParameter.CURRENT_STATE)
+    val itemsByStatesTheyExistedIn = receipts.allItemsByAggregatable(ItemAggregationParameter.EXISTED_IN_STATE)
     val itemsByTag = receipts.allItemsByAggregatable(ItemAggregationParameter.TAG)
     val itemsByWallet = receipts.allItemsByAggregatable(ReceiptAggregationParameter.WALLET)
     val itemsByStore = receipts.allItemsByAggregatable(ReceiptAggregationParameter.STORE)
@@ -127,7 +128,8 @@ fun main(args: Array<String>) {
     val currencyAmountsByReceiptChargeCurrency = itemsByReceiptChargeCurrency.aggregateCurrencyAmounts()
     val currencyAmountsByItemLocation = itemsByItemLocation.aggregateCurrencyAmounts()
     val currencyAmountsByReceiptLocation = itemsByReceiptLocation.aggregateCurrencyAmounts()
-    val currencyAmountsByResolution = itemsByResolution.aggregateCurrencyAmounts()
+    val currencyAmountsByCurrentState = itemsByCurrentState.aggregateCurrencyAmounts()
+    val currencyAmountsByExistedInStates = itemsByStatesTheyExistedIn.aggregateCurrencyAmounts()
     val currencyAmountsByTag = itemsByTag.aggregateCurrencyAmounts()
     val currencyAmountsByWallet = itemsByWallet.aggregateCurrencyAmounts()
     val currencyAmountsByStore = itemsByStore.aggregateCurrencyAmounts()
@@ -141,7 +143,7 @@ fun main(args: Array<String>) {
 
     val currencyAmountsByCategoryAndResolution = receipts
         .allItemsByAggregatable(ItemAggregationParameter.CATEGORY)
-        .itemsByAggregatable(ItemAggregationParameter.RESOLUTION)
+        .itemsByAggregatable(ItemAggregationParameter.CURRENT_STATE)
 
     val currencyAmountsByTransactionTypeAndItemAmountSign = receipts
         .allItemsByAggregatable(ItemAggregationParameter.TRANSACTION_TYPE)

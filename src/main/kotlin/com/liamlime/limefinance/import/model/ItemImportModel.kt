@@ -56,8 +56,10 @@ fun ItemImportModel.toItemModel(
         currencyAmount = currencies.first { it.name == this.currency }.toCurrencyAmountModel(this.amount),
         count = this.count,
         name = this.name,
-        resolution = resolutions.first { it.name == this.resolution },
-        resolutionDate = LocalDateTime.parse(this.resolutionDate, importerDateTimeFormatter),
+        states = listOf(ItemState(
+            resolution = resolutions.first { it.name == this.resolution },
+            resolutionDate = LocalDateTime.parse(this.resolutionDate, importerDateTimeFormatter)
+        )),
         location = locations.first { it.name == this.location },
         tags = this.tags.map { tag -> tags.first { it.name == tag } },
         note = this.note
