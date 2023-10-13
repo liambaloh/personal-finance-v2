@@ -171,7 +171,8 @@ fun String.toWalletModel(): WalletModel {
         glyph = "",
         textColor = randomForegroundColor(),
         backgroundColor = randomBackgroundColor(),
-        type = WalletType.UNKNOWN
+        type = WalletType.UNKNOWN,
+        portfolios = listOf()
     )
 }
 

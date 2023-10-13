@@ -18,19 +18,20 @@ data class ReceiptModel(
     val items: List<ItemModel>,
     val discounts: List<DiscountModel>
 ) {
-    fun getAggregationParameter(receiptAggregationParameter: ReceiptAggregationParameter): NameableEntity {
+    fun getAggregationParameter(receiptAggregationParameter: ReceiptAggregationParameter): List<NameableEntity> {
         return when (receiptAggregationParameter) {
-            ReceiptAggregationParameter.LOCATION -> location
-            ReceiptAggregationParameter.STORE -> store
-            ReceiptAggregationParameter.WALLET -> wallet
-            ReceiptAggregationParameter.RECEIPT_CURRENCY -> receiptCurrencyAmount.currency
-            ReceiptAggregationParameter.CHARGE_CURRENCY -> chargeCurrencyAmount.currency
-            ReceiptAggregationParameter.YEAR -> Year(date.year.toString())
-            ReceiptAggregationParameter.YEAR_MONTH -> Year("${date.year}-${date.month}")
-            ReceiptAggregationParameter.YEAR_MONTH_DAY -> Year("${date.year}-${date.month}-${date.dayOfMonth}")
-            ReceiptAggregationParameter.RECEIPT_AMOUNT_SIGN -> receiptCurrencyAmount.amount.sign()
-            ReceiptAggregationParameter.CHARGE_AMOUNT_SIGN -> chargeCurrencyAmount.amount.sign()
-            ReceiptAggregationParameter.WALLET_TYPE -> wallet.type
+            ReceiptAggregationParameter.LOCATION -> listOf(location)
+            ReceiptAggregationParameter.STORE -> listOf(store)
+            ReceiptAggregationParameter.WALLET -> listOf(wallet)
+            ReceiptAggregationParameter.RECEIPT_CURRENCY -> listOf(receiptCurrencyAmount.currency)
+            ReceiptAggregationParameter.CHARGE_CURRENCY -> listOf(chargeCurrencyAmount.currency)
+            ReceiptAggregationParameter.YEAR -> listOf(Year(date.year.toString()))
+            ReceiptAggregationParameter.YEAR_MONTH -> listOf(Year("${date.year}-${date.month}"))
+            ReceiptAggregationParameter.YEAR_MONTH_DAY -> listOf(Year("${date.year}-${date.month}-${date.dayOfMonth}"))
+            ReceiptAggregationParameter.RECEIPT_AMOUNT_SIGN -> listOf(receiptCurrencyAmount.amount.sign())
+            ReceiptAggregationParameter.CHARGE_AMOUNT_SIGN -> listOf(chargeCurrencyAmount.amount.sign())
+            ReceiptAggregationParameter.WALLET_TYPE -> listOf(wallet.type)
+            ReceiptAggregationParameter.PORTFOLIO -> wallet.portfolios
         }
     }
 
