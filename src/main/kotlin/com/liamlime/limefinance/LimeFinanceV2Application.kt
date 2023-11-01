@@ -1,16 +1,83 @@
 package com.liamlime.limefinance
 
+import com.liamlime.limefinance.api.datasources.inmemory.InMemoryDataSource
 import com.liamlime.limefinance.api.datatypes.ItemAggregationParameter
+import com.liamlime.limefinance.api.datatypes.ItemAggregator
 import com.liamlime.limefinance.api.datatypes.ReceiptAggregationParameter
+import com.liamlime.limefinance.api.datatypes.ReceiptAggregator
 import com.liamlime.limefinance.api.interfaces.NameableEntity
 import com.liamlime.limefinance.api.models.*
 import com.liamlime.limefinance.import.*
 import com.liamlime.limefinance.import.model.*
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import java.math.BigDecimal
+import java.time.LocalDateTime
+import java.util.*
 
 @SpringBootApplication
 class LimeFinanceV2Application
+
+val aggregationCommands = mapOf(
+    "wallet" to Pair(ReceiptAggregator(ReceiptAggregationParameter.WALLET), arrayOf("wal", "wallet", "wallets")),
+    "category" to Pair(ItemAggregator(ItemAggregationParameter.CATEGORY), arrayOf("cat", "category", "categories")),
+    "item currency" to Pair(
+        ItemAggregator(ItemAggregationParameter.CURRENCY),
+        arrayOf("icur", "itemcur", "itemcurrency", "itemcurrencies")
+    ),
+    "receipt currency" to Pair(
+        ReceiptAggregator(ReceiptAggregationParameter.RECEIPT_CURRENCY),
+        arrayOf("rcur", "receiptcur", "receiptcurrency", "receiptcurrencies")
+    ),
+    "charge currency" to Pair(
+        ReceiptAggregator(ReceiptAggregationParameter.CHARGE_CURRENCY),
+        arrayOf("ccur", "chargecur", "chargecurrency", "chargecurrencies")
+    ),
+    "item location" to Pair(
+        ItemAggregator(ItemAggregationParameter.LOCATION),
+        arrayOf("iloc", "itemloc", "itemlocation", "itemlocations")
+    ),
+    "receipt location" to Pair(
+        ReceiptAggregator(ReceiptAggregationParameter.LOCATION),
+        arrayOf("rloc", "receiptloc", "receiptlocation", "receiptlocations")
+    ),
+    "states" to Pair(
+        ItemAggregator(ItemAggregationParameter.CURRENT_STATE),
+        arrayOf("sta", "state", "states", "csta", "cursta", "currentstate", "currentstates")
+    ),
+    "existed in state" to Pair(
+        ItemAggregator(ItemAggregationParameter.EXISTED_IN_STATE),
+        arrayOf("estate", "existedstate", "existedstates", "wasinstate")
+    ),
+    "tag" to Pair(ItemAggregator(ItemAggregationParameter.TAG), arrayOf("tag", "tags")),
+    "store" to Pair(ReceiptAggregator(ReceiptAggregationParameter.STORE), arrayOf("sto", "store", "stores")),
+    "transaction type" to Pair(
+        ItemAggregator(ItemAggregationParameter.TRANSACTION_TYPE),
+        arrayOf("tra", "tratype", "tratypes", "transactiontype", "transactiontypes")
+    ),
+    "year" to Pair(ReceiptAggregator(ReceiptAggregationParameter.YEAR), arrayOf("yea", "year", "yearss")),
+    "year month" to Pair(ReceiptAggregator(ReceiptAggregationParameter.YEAR_MONTH), arrayOf("mon", "month", "months")),
+    "year month day" to Pair(ReceiptAggregator(ReceiptAggregationParameter.YEAR_MONTH_DAY), arrayOf("day", "days")),
+    "receipt ammount sign" to Pair(
+        ReceiptAggregator(ReceiptAggregationParameter.RECEIPT_AMOUNT_SIGN),
+        arrayOf("ras", "rasign", "rasigns", "receiptammountsign", "receiptammountsigns")
+    ),
+    "chargea mmount sign" to Pair(
+        ReceiptAggregator(ReceiptAggregationParameter.CHARGE_AMOUNT_SIGN),
+        arrayOf("cas", "casign", "casigns", "chargeammountsign", "chargeammountsigns")
+    ),
+    "item ammount sign" to Pair(
+        ItemAggregator(ItemAggregationParameter.AMOUNT_SIGN),
+        arrayOf("ias", "iasign", "itemammountsign", "itemammountsigns")
+    ),
+    "wallet type" to Pair(
+        ReceiptAggregator(ReceiptAggregationParameter.WALLET_TYPE),
+        arrayOf("wat", "wtype", "wtypes", "wallettype", "wallettypes")
+    ),
+    "portfolio" to Pair(
+        ReceiptAggregator(ReceiptAggregationParameter.PORTFOLIO),
+        arrayOf("por", "portfolio", "portfolios")
+    ),
+)
 
 fun main(args: Array<String>) {
     //runApplication<LimeFinanceV2Application>(*args)
@@ -81,26 +148,166 @@ fun main(args: Array<String>) {
         )
     }
 
-    val itemsByCategory = receipts.allItemsByAggregatable(ItemAggregationParameter.CATEGORY)
-    val itemsByItemCurrency = receipts.allItemsByAggregatable(ItemAggregationParameter.CURRENCY)
-    val itemsByReceiptCurrency = receipts.allItemsByAggregatable(ReceiptAggregationParameter.RECEIPT_CURRENCY)
-    val itemsByReceiptChargeCurrency = receipts.allItemsByAggregatable(ReceiptAggregationParameter.CHARGE_CURRENCY)
-    val itemsByItemLocation = receipts.allItemsByAggregatable(ItemAggregationParameter.LOCATION)
-    val itemsByReceiptLocation = receipts.allItemsByAggregatable(ReceiptAggregationParameter.LOCATION)
-    val itemsByCurrentState = receipts.allItemsByAggregatable(ItemAggregationParameter.CURRENT_STATE)
-    val itemsByStatesTheyExistedIn = receipts.allItemsByAggregatable(ItemAggregationParameter.EXISTED_IN_STATE)
-    val itemsByTag = receipts.allItemsByAggregatable(ItemAggregationParameter.TAG)
-    val itemsByWallet = receipts.allItemsByAggregatable(ReceiptAggregationParameter.WALLET)
-    val itemsByStore = receipts.allItemsByAggregatable(ReceiptAggregationParameter.STORE)
-    val itemsByTransactionType = receipts.allItemsByAggregatable(ItemAggregationParameter.TRANSACTION_TYPE)
-    val itemsByYear = receipts.allItemsByAggregatable(ReceiptAggregationParameter.YEAR)
-    val itemsByYearMonth = receipts.allItemsByAggregatable(ReceiptAggregationParameter.YEAR_MONTH)
-    val itemsByYearMonthDay = receipts.allItemsByAggregatable(ReceiptAggregationParameter.YEAR_MONTH_DAY)
-    val itemsByReceiptAmountSign = receipts.allItemsByAggregatable(ReceiptAggregationParameter.RECEIPT_AMOUNT_SIGN)
-    val itemsByChargeAmountSign = receipts.allItemsByAggregatable(ReceiptAggregationParameter.CHARGE_AMOUNT_SIGN)
-    val itemsByItemAmountSign = receipts.allItemsByAggregatable(ItemAggregationParameter.AMOUNT_SIGN)
-    val itemsByWalletType = receipts.allItemsByAggregatable(ReceiptAggregationParameter.WALLET_TYPE)
-    val itemsByPortfolio = receipts.allItemsByAggregatable(ReceiptAggregationParameter.PORTFOLIO)
+    var currentReceipts = receipts;
+    val scan = Scanner(System.`in`)
+
+    while (true) {
+        println("Enter command: 'options' for options")
+        val commandLine = scan.nextLine().trim().lowercase()
+        val command = commandLine.split(" ").first()
+        val parameters = commandLine
+            .split(" ")
+            .drop(1)
+            .joinToString(" ")
+            .split(",")
+            .map { it.trim() }
+        println("Command: $command; Parameters: $parameters")
+
+        val currentDataSource = InMemoryDataSource(
+            categories = categories,
+            currencies = currencies,
+            discounts = currentReceipts.flatMap { it.discounts }.distinct(),
+            items = currentReceipts.flatMap { it.items }.distinct(),
+            locations = locations,
+            portfolios = portfoliosFromImport,
+            receipts = currentReceipts,
+            stores = stores,
+            tags = tags,
+            wallets = wallets,
+        )
+
+        when {
+            command.startsWith("by") -> {
+                val aggregator = aggregationCommands
+                    .filter { (_, aggregatorToListOfCommands) ->
+                        aggregatorToListOfCommands.second.contains(
+                            command.removePrefix(
+                                "by"
+                            )
+                        )
+                    }
+                    .map { (_, aggregatorToListOfCommands) -> aggregatorToListOfCommands.first }
+                    .firstOrNull()
+                val aggregationParameter = when (aggregator) {
+                    is ReceiptAggregator -> aggregator.aggregationParameter
+                    is ItemAggregator -> aggregator.aggregationParameter
+                    else -> {
+                        null
+                    }
+                }
+                val aggregatedItems = when (aggregationParameter) {
+                    is ReceiptAggregationParameter -> currentDataSource.itemsByAggregatable(aggregationParameter)
+                    is ItemAggregationParameter -> currentDataSource.itemsByAggregatable(aggregationParameter)
+                    else -> {
+                        println("Unknown aggregation parameter")
+                        null
+                    }
+                }
+                if (aggregatedItems != null) {
+                    println("Aggregating by $aggregationParameter...")
+                    val currencyAmountsByAggregatable = aggregatedItems.aggregateCurrencyAmounts(currentDataSource)
+                    currencyAmountsByAggregatable.printFormatted()
+                }
+            }
+
+            command.startsWith("filter") -> {
+                val aggregator = aggregationCommands
+                    .filter { (_, aggregatorToListOfCommands) ->
+                        aggregatorToListOfCommands.second.contains(
+                            command.removePrefix(
+                                "filter"
+                            )
+                        )
+                    }
+                    .map { (_, aggregatorToListOfCommands) -> aggregatorToListOfCommands.first }
+                    .firstOrNull()
+                val aggregationParameter = when (aggregator) {
+                    is ReceiptAggregator -> aggregator.aggregationParameter
+                    else -> {
+                        null
+                    }
+                }
+                currentReceipts = when (aggregationParameter) {
+                    is ReceiptAggregationParameter -> {
+                        println("Filtering by $aggregationParameter = ${parameters.joinToString(", ")}")
+                        currentReceipts
+                            .filter { receipt ->
+                                receipt.getAggregationParameter(aggregationParameter)
+                                    .map { it.name.lowercase() }
+                                    .any { it in parameters }
+                            }
+                    }
+
+                    else -> {
+                        println("Unknown aggregation parameter")
+                        currentReceipts
+                    }
+                }
+            }
+
+            command in listOf("options", "o") -> {
+                println("Options: ")
+                println(" - by* (e.g. byWal) * is one of:")
+                aggregationCommands.forEach { (aggregatorName, aggregatorToListOfCommands) ->
+                    val commands = aggregatorToListOfCommands.second
+                    println("\t- $aggregatorName = ${commands.joinToString(", ")}")
+                }
+                println(" - filter* value one, value two, value three (e.g. filterYear 2017, 2018) * is one of:")
+                aggregationCommands
+                    .filter { (_, aggregatorToListOfCommands) ->
+                        aggregatorToListOfCommands.first is ReceiptAggregator
+                    }
+                    .forEach { (aggregatorName, aggregatorToListOfCommands) ->
+                        val commands = aggregatorToListOfCommands.second
+                        println("\t- $aggregatorName = ${commands.joinToString(", ")}")
+                    }
+                println(" - restore (undoes filtering by restoring receipts to all receipts)")
+                println(" - options (prints this list)")
+                println(" - exit (quits the app)")
+            }
+
+            command == "restore" -> {
+                currentReceipts = receipts
+            }
+
+            command == "exit" -> {
+                break
+            }
+        }
+    }
+
+
+    val receiptsInThePast = receipts.filter {
+        it.date <= LocalDateTime.now()
+    }
+
+    val dataSourceWithPastReceipts = InMemoryDataSource(
+        categories = categories,
+        currencies = currencies,
+        discounts = receipts.flatMap { it.discounts }.distinct(),
+        items = receipts.flatMap { it.items }.distinct(),
+        locations = locations,
+        portfolios = portfoliosFromImport,
+        receipts = receipts,
+        stores = stores,
+        tags = tags,
+        wallets = wallets,
+    )
+
+    val dataSourceWithAllReceipts = InMemoryDataSource(
+        categories = categories,
+        currencies = currencies,
+        discounts = receiptsInThePast.flatMap { it.discounts }.distinct(),
+        items = receiptsInThePast.flatMap { it.items }.distinct(),
+        locations = locations,
+        portfolios = portfoliosFromImport,
+        receipts = receiptsInThePast,
+        stores = stores,
+        tags = tags,
+        wallets = wallets,
+    )
+
+    val dataSource = dataSourceWithPastReceipts
 
     receipts
         .receiptsByAggregatable(ReceiptAggregationParameter.YEAR)
@@ -109,42 +316,21 @@ fun main(args: Array<String>) {
         }.toMap()
         .printFormatted()
 
-    val currencyAmountsByCategory = itemsByCategory.aggregateCurrencyAmounts()
-    val currencyAmountsByItemCurrency = itemsByItemCurrency.aggregateCurrencyAmounts()
-    val currencyAmountsByReceiptCurrency = itemsByReceiptCurrency.aggregateCurrencyAmounts()
-    val currencyAmountsByReceiptChargeCurrency = itemsByReceiptChargeCurrency.aggregateCurrencyAmounts()
-    val currencyAmountsByItemLocation = itemsByItemLocation.aggregateCurrencyAmounts()
-    val currencyAmountsByReceiptLocation = itemsByReceiptLocation.aggregateCurrencyAmounts()
-    val currencyAmountsByCurrentState = itemsByCurrentState.aggregateCurrencyAmounts()
-    val currencyAmountsByExistedInStates = itemsByStatesTheyExistedIn.aggregateCurrencyAmounts()
-    val currencyAmountsByTag = itemsByTag.aggregateCurrencyAmounts()
-    val currencyAmountsByWallet = itemsByWallet.aggregateCurrencyAmounts()
-    val currencyAmountsByStore = itemsByStore.aggregateCurrencyAmounts()
-    val currencyAmountsByTransactionType = itemsByTransactionType.aggregateCurrencyAmounts()
-    val currencyAmountsByYear = itemsByYear.aggregateCurrencyAmounts()
-    val currencyAmountsByYearMonth = itemsByYearMonth.aggregateCurrencyAmounts()
-    val currencyAmountsByYearMonthDay = itemsByYearMonthDay.aggregateCurrencyAmounts()
-    val currencyAmountsByReceiptAmountSign = itemsByReceiptAmountSign.aggregateCurrencyAmounts()
-    val currencyAmountsByChargeAmountSign = itemsByChargeAmountSign.aggregateCurrencyAmounts()
-    val currencyAmountsByItemAmountSign = itemsByItemAmountSign.aggregateCurrencyAmounts()
-    val currencyAmountsByWalletType = itemsByWalletType.aggregateCurrencyAmounts()
-    val currencyAmountsByPortfolio = itemsByPortfolio.aggregateCurrencyAmounts()
-
-    val currencyAmountsByCategoryAndResolution = receipts
-        .allItemsByAggregatable(ItemAggregationParameter.CATEGORY)
+    val currencyAmountsByCategoryAndResolution = dataSource
+        .itemsByAggregatable(ItemAggregationParameter.CATEGORY)
         .itemsByAggregatable(ItemAggregationParameter.CURRENT_STATE)
 
-    val currencyAmountsByTransactionTypeAndItemAmountSign = receipts
-        .allItemsByAggregatable(ItemAggregationParameter.TRANSACTION_TYPE)
+    val currencyAmountsByTransactionTypeAndItemAmountSign = dataSource
+        .itemsByAggregatable(ItemAggregationParameter.TRANSACTION_TYPE)
         .itemsByAggregatable(ItemAggregationParameter.AMOUNT_SIGN)
 
-    val currencyAmountsByWalletsAndTransactionType = receipts
-        .allItemsByAggregatable(ReceiptAggregationParameter.WALLET)
+    val currencyAmountsByWalletsAndTransactionType = dataSource
+        .itemsByAggregatable(ReceiptAggregationParameter.WALLET)
         .itemsByAggregatable(ItemAggregationParameter.TRANSACTION_TYPE)
 
     currencyAmountsByCategoryAndResolution.forEach { (category, itemsInCategoryByResolution) ->
         println("Category: ${category.name} has items by resolution:")
-        val currencyAmountsInCategoryByResolution = itemsInCategoryByResolution.aggregateCurrencyAmounts()
+        val currencyAmountsInCategoryByResolution = itemsInCategoryByResolution.aggregateCurrencyAmounts(dataSource)
         currencyAmountsInCategoryByResolution.printFormatted()
     }
 
@@ -160,31 +346,35 @@ fun main(args: Array<String>) {
 
 
     currencyAmountsByWalletsAndTransactionType
-        .print1()
-
-    currencyAmountsByPortfolio.printFormatted()
+        .print1(0, dataSource)
 }
 
 fun Map<NameableEntity, Map<NameableEntity, Map<NameableEntity, Map<NameableEntity, List<ItemModel>>>>>.print3(
-    indentation: Int = 0
+    indentation: Int = 0, dataSource: InMemoryDataSource
 ) {
     this.forEach { (outerNameableEntity, itemsByInnerNameableEntity) ->
         println("${"\t".repeat(indentation)}Entity: ${outerNameableEntity.name} has items:")
-        itemsByInnerNameableEntity.print2(indentation + 1)
+        itemsByInnerNameableEntity.print2(indentation + 1, dataSource)
     }
 }
 
-fun Map<NameableEntity, Map<NameableEntity, Map<NameableEntity, List<ItemModel>>>>.print2(indentation: Int = 0) {
+fun Map<NameableEntity, Map<NameableEntity, Map<NameableEntity, List<ItemModel>>>>.print2(
+    indentation: Int = 0,
+    dataSource: InMemoryDataSource
+) {
     this.forEach { (outerNameableEntity, itemsByInnerNameableEntity) ->
         println("${"\t".repeat(indentation)}Entity: ${outerNameableEntity.name} has items:")
-        itemsByInnerNameableEntity.print1(indentation + 1)
+        itemsByInnerNameableEntity.print1(indentation + 1, dataSource)
     }
 }
 
-fun Map<NameableEntity, Map<NameableEntity, List<ItemModel>>>.print1(indentation: Int = 0) {
+fun Map<NameableEntity, Map<NameableEntity, List<ItemModel>>>.print1(
+    indentation: Int = 0,
+    dataSource: InMemoryDataSource
+) {
     this.forEach { (outerNameableEntity, itemsByInnerNameableEntity) ->
         println("${"\t".repeat(indentation)}Entity: ${outerNameableEntity.name} has items:")
-        val currencyAmountsInCategoryByResolution = itemsByInnerNameableEntity.aggregateCurrencyAmounts()
+        val currencyAmountsInCategoryByResolution = itemsByInnerNameableEntity.aggregateCurrencyAmounts(dataSource)
         currencyAmountsInCategoryByResolution.printFormatted(indentation + 1)
     }
 }
@@ -198,9 +388,9 @@ fun Map<NameableEntity, List<CurrencyAmountModel>>.printFormatted(indentation: I
     }
 }
 
-fun Map<out NameableEntity, List<ItemModel>>.aggregateCurrencyAmounts(): Map<NameableEntity, List<CurrencyAmountModel>> {
+fun Map<out NameableEntity, List<ItemModel>>.aggregateCurrencyAmounts(dataSource: InMemoryDataSource): Map<NameableEntity, List<CurrencyAmountModel>> {
     return this.map { (nameableEntity, items) ->
-        val currencyAmounts = items.map { it.currencyAmount }
+        val currencyAmounts = items.map { dataSource.getItemChargeAmount(it) }
             .fold(mutableMapOf<CurrencyModel, BigDecimal>()) { currencyAmountsAcc, currencyAmount ->
                 currencyAmountsAcc.putIfAbsent(currencyAmount.currency, BigDecimal.ZERO)
                 currencyAmountsAcc[currencyAmount.currency] =
@@ -212,14 +402,6 @@ fun Map<out NameableEntity, List<ItemModel>>.aggregateCurrencyAmounts(): Map<Nam
 
         nameableEntity to currencyAmounts
     }.toMap()
-}
-
-fun Collection<ReceiptModel>.allItems(): List<ItemModel> {
-    return this.flatMap { it.items }
-}
-
-fun Collection<ReceiptModel>.allItemsByAggregatable(itemAggregationParameter: ItemAggregationParameter): Map<NameableEntity, List<ItemModel>> {
-    return this.allItems().itemsByAggregatable(itemAggregationParameter)
 }
 
 fun Map<NameableEntity, List<ItemModel>>.itemsByAggregatable(itemAggregationParameter: ItemAggregationParameter): Map<NameableEntity, Map<NameableEntity, List<ItemModel>>> {
