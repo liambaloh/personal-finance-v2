@@ -1,10 +1,7 @@
 package com.liamlime.limefinance
 
 import com.liamlime.limefinance.api.datasources.inmemory.InMemoryDataSource
-import com.liamlime.limefinance.api.datatypes.ItemAggregationParameter
-import com.liamlime.limefinance.api.datatypes.ItemAggregator
-import com.liamlime.limefinance.api.datatypes.ReceiptAggregationParameter
-import com.liamlime.limefinance.api.datatypes.ReceiptAggregator
+import com.liamlime.limefinance.api.datatypes.*
 import com.liamlime.limefinance.api.interfaces.NameableEntity
 import com.liamlime.limefinance.api.models.*
 import com.liamlime.limefinance.import.*
@@ -151,6 +148,9 @@ fun main(args: Array<String>) {
     var currentReceipts = receipts;
     val scan = Scanner(System.`in`)
 
+    var lastAggregationParameter: AggregationParameter? = null
+    var lastAggregationValues: List<NameableEntity>? = null
+
     while (true) {
         println("Enter command: 'options' for options")
         val commandLine = scan.nextLine().trim().lowercase()
@@ -181,13 +181,12 @@ fun main(args: Array<String>) {
                 val aggregator = aggregationCommands
                     .filter { (_, aggregatorToListOfCommands) ->
                         aggregatorToListOfCommands.second.contains(
-                            command.removePrefix(
-                                "by"
-                            )
+                            command.removePrefix("by")
                         )
                     }
                     .map { (_, aggregatorToListOfCommands) -> aggregatorToListOfCommands.first }
                     .firstOrNull()
+                lastAggregationParameter = aggregator
                 val aggregationParameter = when (aggregator) {
                     is ReceiptAggregator -> aggregator.aggregationParameter
                     is ItemAggregator -> aggregator.aggregationParameter
@@ -206,7 +205,52 @@ fun main(args: Array<String>) {
                 if (aggregatedItems != null) {
                     println("Aggregating by $aggregationParameter...")
                     val currencyAmountsByAggregatable = aggregatedItems.aggregateCurrencyAmounts(currentDataSource)
+                    lastAggregationValues = currencyAmountsByAggregatable.keys.toList()
                     currencyAmountsByAggregatable.printFormatted()
+                }
+            }
+
+            command == "filter" -> {
+                if(lastAggregationParameter != null) {
+                    val receiptAggregationParameter = when (lastAggregationParameter) {
+                        is ReceiptAggregator -> lastAggregationParameter.aggregationParameter
+                        else -> {
+                            null
+                        }
+                    }
+                    val convertedParameters =
+                        if(lastAggregationValues != null) {
+                            parameters
+                                .map { it.toIntOrNull() }
+                                .map {
+                                    if(it != null) {
+                                        lastAggregationValues[it].name.lowercase()
+                                    }else{
+                                        null
+                                    }
+                                }.filterNotNull()
+                        }
+                        else {
+                            parameters
+                        }
+                    currentReceipts = when (receiptAggregationParameter) {
+                        is ReceiptAggregationParameter -> {
+                            println("Filtering by $receiptAggregationParameter = ${convertedParameters.joinToString(", ")}")
+                            currentReceipts
+                                .filter { receipt ->
+                                    receipt.getAggregationParameter(receiptAggregationParameter)
+                                        .map { it.name.lowercase() }
+                                        .any { it in convertedParameters }
+                                }
+                        }
+
+                        else -> {
+                            println("Unknown aggregation parameter")
+                            currentReceipts
+                        }
+                    }
+                } else {
+                    println("No last aggregation parameter")
                 }
             }
 
@@ -243,6 +287,7 @@ fun main(args: Array<String>) {
                         currentReceipts
                     }
                 }
+                lastAggregationParameter = null
             }
 
             command in listOf("options", "o") -> {
@@ -268,6 +313,7 @@ fun main(args: Array<String>) {
 
             command == "restore" -> {
                 currentReceipts = receipts
+                lastAggregationParameter = null
             }
 
             command == "exit" -> {
@@ -380,8 +426,8 @@ fun Map<NameableEntity, Map<NameableEntity, List<ItemModel>>>.print1(
 }
 
 fun Map<NameableEntity, List<CurrencyAmountModel>>.printFormatted(indentation: Int = 0) {
-    this.forEach { (nameableEntity, currencyAmountModels) ->
-        println("${"\t".repeat(indentation)}Entity: ${nameableEntity.name} has items worth:")
+    this.onEachIndexed { index, (nameableEntity, currencyAmountModels) ->
+        println("${"\t".repeat(indentation)}$index: Entity: ${nameableEntity.name} has items worth:")
         currencyAmountModels.forEach { currencyAmount ->
             println("${"\t".repeat(indentation + 1)}${currencyAmount.currency.name}: ${currencyAmount.amount}")
         }
